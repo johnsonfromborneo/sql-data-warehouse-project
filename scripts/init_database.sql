@@ -1,9 +1,10 @@
 use master;
+--create new database
 create database DataWarehouse;
 
 use DataWarehouse;
 
-//create schema
+--create schema
 Create schema bronze;
 
 Create schema silver;
