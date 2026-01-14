@@ -2,7 +2,10 @@ exec silver.load_silver
 
 create or alter procedure silver.load_silver as
 Begin
-
+	declare @starttime datetime, @endtime datetime;
+	set @starttime = GETDATE ();
+	begin try
+	declare @start_time datetime, @end_time datetime;
 	--silver.crm_cust_info
 	truncate table silver.crm_cust_info
 	insert into silver.crm_cust_info(
@@ -153,6 +156,20 @@ Begin
 		MAINTENANCE 
 	from bronze.erp_PX_CAT_G1V2
 
+
+
+set @endtime = GETDATE ();
+		 print '------------------------------------';
+		 print '>> Load batch Duration: ' + cast (datediff(second, @start_time,@end_time) as nvarchar) + ' seconds';
+		 print '------------------------------------';
+end try
+begin catch
+		print '===================================================';
+		print 'Error on loading for silver layer';
+		print '===================================================';
+	end catch
 end
-
-
+set @endtime = GETDATE ();
+		 print '------------------------------------';
+		 print '>> Load batch Duration: ' + cast (datediff(second, @start_time,@end_time) as nvarchar) + ' seconds';
+		 print '------------------------------------';
