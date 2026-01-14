@@ -1,4 +1,4 @@
-// trimmed customer info and insert
+// silver.crm_cust_info
 
 
 insert into silver.crm_cust_info(
@@ -31,7 +31,7 @@ from bronze.crm_cust_info
 where cst_id is not null)t where flag_last = 1
 
 
-//Cleaned product info and updated the date
+//silver.crm_prd_info
 insert into silver.crm_prd_info(
 	prd_id,
 	cat_id,
@@ -65,7 +65,7 @@ DATEADD(
 
 from bronze.crm_prd_info
 
-select * from silver.crm_prd_info
+
 
 //silver.crm_sales_details
 
