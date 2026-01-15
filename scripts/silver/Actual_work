@@ -9,7 +9,7 @@ Silver layer as the filtered and cleansed data from bronze layer
 exec silver.load_silver
 
 create or alter procedure silver.load_silver as
-declare @starttime datetime, @endtime datetime;
+
 Begin
 	declare @starttime datetime, @endtime datetime;
 	set @starttime = GETDATE ();
