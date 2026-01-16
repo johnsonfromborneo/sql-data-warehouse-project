@@ -5,152 +5,80 @@ Gold layer is ready to use for business analysis which based on the cleaned data
   
 */
 
+-------Create View for customer list from silver layer---------------------
+if object_id('gold.dim_customers', 'V') is not null
+	drop view gold.dim_customers;
+go
 
-exec gold.load_gold
+create view gold.dim_customers as
+select
+	ROW_NUMBER() over (order by cst_id) as customer_key,
+	ci.cst_id as customer_id,
+	ci.cst_key as customer_number,
+	ci.cst_firstname as first_name,
+	ci.cst_lastname as last_name,
+	la.CNTRY as country,
+	case when ci.cst_gender != 'n/a' then ci.cst_gender  ---cleared gender info
+		else coalesce (ca.GEN, 'n/a')
+	end as new_gen,
+	ci.cst_marital_status as marital_status,
+	ca.BDATE as birthday,
+	ci.cst_create_date as create_date
 
-create or alter procedure gold.load_gold as
-declare @starttime datetime, @endtime datetime;
-Begin
-	declare @starttime datetime, @endtime datetime;
-	set @starttime = GETDATE ();
-	begin try
-	declare @start_time datetime, @end_time datetime;
-		print '====================================';
-		print 'Loading Gold Layer';
-		print '====================================';
-	--*********************************gold.crm_cust_info*********************************--
-		print '------------------------------------';
-		print 'Loading CRM tables';
-		print '------------------------------------';
-		
---****************************editing code start****************************--
-set @start_time = GETDATE ();
-		print '>> Truncating table:gold.crm_cust_info';
-			truncate table gold.crm_cust_info;
-		print '>> Inserting table:gold.crm_cust_info';
-	truncate table gold.crm_cust_info
-	insert into gold.crm_cust_info(
-		cst_id,
-		cst_key,
-		cst_firstname,
-		cst_lastname,
-		cst_marital_status,
-		cst_gender,
-		cst_create_date)
+from silver.crm_cust_info ci
+left join silver.erp_CUST_AZ12 ca
+on ci.cst_key = ca.CID
+left join silver.erp_LOC_A101 la
+on ci.cst_key = la.CID
 
+
+-------Create View for product list from silver layer---------------------
+if object_id('gold.dim_products', 'V') is not null
+	drop view gold.dim_products;
+go
+
+
+create view gold.dim_products as
+
+select
+	ROW_NUMBER() over (order by pn.prd_start_dt, pn.prd_key) as product_key,
+	pn.prd_id as product_id,
+	pn.prd_key as product_number,
+	pn.prd_nm as product_name,
+	pn.cat_id as catergory_id,
+	pc.CAT as catergory,
+	pc.SUBCAT as subcategory,
+	pc.MAINTENANCE as maintenace,
+	pn.prd_cost as cost,
+	pn.prd_line as product_line,
+	pn.prd_start_dt as start_date
 	
-
-	set @end_time = GETDATE ();
-		 print '------------------------------------';
-		 print '>> Load Duration: ' + cast (datediff(second, @start_time,@end_time) as nvarchar) + ' seconds';
-		 print '------------------------------------';
---*********************************gold.crm_prd_info*********************************--
-
-	set @start_time = GETDATE ();
-	print '>> Truncating table:gold.crm_prd_details';
-		truncate table gold.crm_prd_info	
-	print '>> Inserting table:gold.crm_prd_info';
-	
-	insert into gold.crm_prd_info(
-		prd_id,
-		cat_id,
-		prd_key,
-		prd_nm,
-		prd_cost,
-		prd_line,
-		prd_start_dt,
-		prd_end_dt
-	)
-
-	set @end_time = GETDATE ();
-		 print '------------------------------------';
-		 print '>> Load Duration: ' + cast (datediff(second, @start_time,@end_time) as nvarchar) + ' seconds';
-		 print '------------------------------------';
+from silver.crm_prd_info pn
+left join silver.erp_PX_CATR_G1V2 pc
+on pn.cat_id = pc.id
+where prd_end_dt is null -- up-to-date data
 
 
---*********************************gold.crm_sales_info*********************************--
+-------Create View for sales from silver layer---------------------
+if object_id('gold.fact_sales', 'V') is not null
+	drop view gold.fact_sales;
+go
 
-	set @start_time = GETDATE ();
-		print '>> Truncating table:gold.crm_sales_details';
-			truncate table gold.crm_sales_details
-		print '>> Inserting table:gold.crm_sales_info';
-	
-	insert into silver.crm_sales_details(
-		sls_ord_num,
-		sls_prd_key ,
-		sls_cust_id ,
-		sls_order_dt,
-		sls_ship_dt ,
-		sls_due_dt,
-		sls_sales,
-		sls_quantity,
-		sls_price )
+create view gold.fact_sales as
 
-
-	set @end_time = GETDATE ();
-		 print '------------------------------------';
-		 print '>> Load Duration: ' + cast (datediff(second, @start_time,@end_time) as nvarchar) + ' seconds';
-		 print '------------------------------------';
-
---*********************************gold.erp_CUST_AZ12*********************************--
-
-	set @start_time = GETDATE ();
-		print '>> Truncating table:gold.erp_CUST_AZ12';
-			truncate table gold.erp_CUST_AZ12;
-		print '>> Inserting table:gold.erp_CUST_AZ12';
-	insert into silver.erp_CUST_AZ12(
-	CID, BDATE, GEN)
-
-
-	
-	set @end_time = GETDATE ();
-		 print '------------------------------------';
-		 print '>> Load Duration: ' + cast (datediff(second, @start_time,@end_time) as nvarchar) + ' seconds';
-		 print '------------------------------------';
-	
---*********************************gold.erp_LOC_A101*********************************--
-
-	set @start_time = GETDATE ();
-		print '>> Truncating table:gold.erp_LOC_A101';
-			truncate table gold.erp_LOC_A101;
-		print '>> Inserting table:gold.erp_LOC_A101';
-	insert into gold.erp_LOC_A101 (CID, CNTRY)
-
-	
-	set @end_time = GETDATE ();
-		 print '------------------------------------';
-		 print '>> Load Duration: ' + cast (datediff(second, @start_time,@end_time) as nvarchar) + ' seconds';
-		 print '------------------------------------';
-
-
---*********************************gold.erp_PX_CAT_G1V2*********************************--
-	
-		set @start_time = GETDATE ();
-		print '>> Truncating table:gold.erp_PX_CAT_G1V2';
-			truncate table gold.erp_PX_CAT_G1V2;
-		print '>> Inserting table:gold.erp_PX_CAT_G1V2';
-	insert into gold.erp_PX_CATR_G1V2 (
-    ID, 
-    CAT, 
-    SUBCAT,
-    MAINTENANCE)
-
-	
-	set @endtime = GETDATE ();
-		 print '------------------------------------';
-		 print '>> Load batch Duration: ' + cast (datediff(second, @start_time,@end_time) as nvarchar) + ' seconds';
-		 print '------------------------------------';
-
---****************************editing code end****************************--
-end try
-begin catch
-		print '===================================================';
-		print 'Error on loading for gold layer';
-		print '===================================================';
-	end catch
-end
-set @endtime = GETDATE ();
-		 print '------------------------------------';
-		 print '>> Load batch Duration: ' + cast (datediff(second, @start_time,@end_time) as nvarchar) + ' seconds';
-		 print '------------------------------------';
+select 
+	sd.sls_ord_num as order_number,
+	pr.product_key ,
+	cu.customer_key ,
+	sd.sls_order_dt as order_date,
+	sd.sls_ship_dt as shipping_date,
+	sd.sls_due_dt as due_date,
+	sd.sls_sales as sales_amount,
+	sd.sls_quantity as quantity,
+	sd.sls_price as price
+from silver.crm_sales_details sd
+left join gold.dim_products pr
+on sd.sls_prd_key = pr.product_number
+left join gold.dim_customers cu
+on sd.sls_cust_id = cu.customer_id
 
