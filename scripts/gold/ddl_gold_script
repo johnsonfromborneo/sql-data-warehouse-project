@@ -1,67 +1,83 @@
-if object_id ('gold.crm_cust_info', 'U') is not null
-	drop table gold.crm_cust_info;
-create table gold.crm_cust_info(
-	cst_id int,
-	cst_key nvarchar(50),
-	cst_firstname nvarchar(50),
-	cst_lastname nvarchar(50),
-	cst_marital_status nvarchar(50),
-	cst_gender nvarchar(50),
-	cst_create_date date,
-	dwh_create_date datetime2 default getdate()	
-);
+/*
++====================================================+
+Gold layer is ready to use for business analysis which based on the cleaned data from silver layer
++====================================================+
+  
+*/
 
-if object_id ('gold.crm_prd_info', 'U') is not null
-	drop table gold.crm_prd_info;
-create table gold.crm_prd_info(
-	prd_id int,
-	prd_key nvarchar(50),
-	prd_nm nvarchar(50),
-	prd_cost int,
-	prd_line nvarchar(50),
-	prd_start_dt date,
-	prd_end_dt date,
-	dwh_create_date datetime2 default getdate()	
-);
+-------Create View for customer list from silver layer---------------------
+if object_id('gold.dim_customers', 'V') is not null
+	drop view gold.dim_customers;
+go
 
-if object_id ('gold.crm_sales_details', 'U') is not null
-	drop table gold.crm_sales_details;
-create table gold.crm_sales_details(
-	sls_ord_num nvarchar(50),
-	sls_prd_key nvarchar(50),
-	sls_cust_id int,
-	sls_order_dt date,
-	sls_ship_dt date,
-	sls_due_dt date,
-	sls_sales date,
-	sls_quantity int,
-	sls_price int,
-	dwh_create_date datetime2 default getdate()	
-);
+create view gold.dim_customers as
+select
+	ROW_NUMBER() over (order by cst_id) as customer_key,
+	ci.cst_id as customer_id,
+	ci.cst_key as customer_number,
+	ci.cst_firstname as first_name,
+	ci.cst_lastname as last_name,
+	la.CNTRY as country,
+	case when ci.cst_gender != 'n/a' then ci.cst_gender  ---cleared gender info
+		else coalesce (ca.GEN, 'n/a')
+	end as new_gen,
+	ci.cst_marital_status as marital_status,
+	ca.BDATE as birthday,
+	ci.cst_create_date as create_date
 
-if object_id ('date.erp_CUST_AZ12', 'U') is not null
-	drop table date.erp_CUST_AZ12;
-create table date.erp_CUST_AZ12(
-	CID nvarchar(50),
-	BDATE date,
-	GEN nvarchar(50),
-	dwh_create_date datetime2 default getdate()	
-);
+from silver.crm_cust_info ci
+left join silver.erp_CUST_AZ12 ca
+on ci.cst_key = ca.CID
+left join silver.erp_LOC_A101 la
+on ci.cst_key = la.CID
 
-if object_id ('gold.erp_LOC_A101', 'U') is not null
-	drop table gold.erp_LOC_A101;
-create table gold.erp_LOC_A101(
-	CID nvarchar(50),
-	CNTRY nvarchar(50),
-	dwh_create_date datetime2 default getdate()	
-);
 
-if object_id ('gold.erp_PX_CATR_G1V2', 'U') is not null
-	drop table gold.erp_PX_CATR_G1V2;
-create table gold.erp_PX_CATR_G1V2(
-	ID nvarchar(50),
-	CAT nvarchar(50),
-	SUBCAT nvarchar(50),
-	MAINTENANCE nvarchar(50),
-	dwh_create_date datetime2 default getdate()	
-);
+-------Create View for product list from silver layer---------------------
+if object_id('gold.dim_products', 'V') is not null
+	drop view gold.dim_products;
+go
+
+
+create view gold.dim_products as
+
+select
+	ROW_NUMBER() over (order by pn.prd_start_dt, pn.prd_key) as product_key,
+	pn.prd_id as product_id,
+	pn.prd_key as product_number,
+	pn.prd_nm as product_name,
+	pn.cat_id as catergory_id,
+	pc.CAT as catergory,
+	pc.SUBCAT as subcategory,
+	pc.MAINTENANCE as maintenace,
+	pn.prd_cost as cost,
+	pn.prd_line as product_line,
+	pn.prd_start_dt as start_date
+	
+from silver.crm_prd_info pn
+left join silver.erp_PX_CATR_G1V2 pc
+on pn.cat_id = pc.id
+where prd_end_dt is null -- up-to-date data
+
+
+-------Create View for sales from silver layer---------------------
+if object_id('gold.fact_sales', 'V') is not null
+	drop view gold.fact_sales;
+go
+
+create view gold.fact_sales as
+
+select 
+	sd.sls_ord_num as order_number,
+	pr.product_key ,
+	cu.customer_key ,
+	sd.sls_order_dt as order_date,
+	sd.sls_ship_dt as shipping_date,
+	sd.sls_due_dt as due_date,
+	sd.sls_sales as sales_amount,
+	sd.sls_quantity as quantity,
+	sd.sls_price as price
+from silver.crm_sales_details sd
+left join gold.dim_products pr
+on sd.sls_prd_key = pr.product_number
+left join gold.dim_customers cu
+on sd.sls_cust_id = cu.customer_id
