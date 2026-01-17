@@ -6,9 +6,7 @@ If you found anything couldn't understand, you may refer here for better underst
 **Bronze/ Level 1- Raw Data**
 
 --This level of the data are raw and imported from the source (local or cloud server) directly. 
-
 --The data structures are as-is from the source file and will be prepare for the transform and sort out at silver layer.
-
 --Need to make sure the link of the source is valid or else the data will invalid and the following level will be affected as well.
 
 
