@@ -38,17 +38,6 @@ If you found anything couldn't understand, you may refer here for better underst
 
 -- erp: Enterprise Resource Planning
 
-<details>
-<summary>My top THINGS-TO-RANK</summary>
-
-| Rank | THING-TO-RANK      |
-|-----:|--------------------|
-|     1|       asd          |
-|     2|        asd         |
-|     3|        dsasd       |
-
-
-</details>
 
 
 
