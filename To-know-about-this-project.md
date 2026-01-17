@@ -19,3 +19,11 @@ If you found anything couldn't understand, you may refer here for better underst
 **Gold/Level 3- View Data**
 -- The purpose of this level is to create the view table for the business decision making through Tableau or Power BI.
 -- Sorting the data from the previous level to fit user's purpose and edit accordingly.
+
+
+**Test Folder**
+--Contain the .sql file to cross check the quality of the schemas and the tables in the data warehouse.
+
+**Glossary**
+-- crm: Customer Relationship Management
+-- erp: Enterprise Resource Planning
