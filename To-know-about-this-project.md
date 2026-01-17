@@ -26,4 +26,5 @@ If you found anything couldn't understand, you may refer here for better underst
 
 **Glossary**
 -- crm: Customer Relationship Management
+
 -- erp: Enterprise Resource Planning
